@@ -277,9 +277,70 @@ class Hand
 
 	end
 
+  def hand_rank
+
+    case @hand_type
+
+    when :royal_flush
+      10
+    when :straight_flush
+      9
+    when :four_of_a_kind
+      8
+    when :full_house
+      7
+    when :flush
+      6
+    when :straight
+      5
+    when :three_of_a_kind
+      4
+    when :two_pair
+      3
+    when :one_pair
+      2
+    when :high_card
+      1
+    end
+
+  end
+
+  def compare(other_hand)
+    case self.hand_rank <=> other_hand.hand_rank
+    when 1
+      #self wins
+      self
+    when 0
+      #it's a tie
+
+    when -1
+      #other_hand wins
+      other_hand
+    end
+
+  end
+
+  def discard(indices, deck)
+    indices.each do |i|
+      original_card = @hand_cards[i]
+      @hand_cards[i] = deck.deal(1)[0]
+      deck.unused_cards << original_card
+
+    end
+
+  end
+
 end
 
+def Player
 
+  attr_accessor :hand, :pot
+
+  def initialize
+
+  end
+
+end
 
 
 
