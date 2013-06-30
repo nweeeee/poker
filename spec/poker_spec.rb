@@ -347,12 +347,37 @@ describe Hand do
 
     end
 
+    it "TEST: find bug!" do
+      hand.hand_cards[0] = Card.new(11, :spades)
+      hand.hand_cards[1] = Card.new(7, :diamonds)
+      hand.hand_cards[2] = Card.new(14, :spades)
+      hand.hand_cards[3] = Card.new(11, :diamonds)
+      hand.hand_cards[4] = Card.new(14, :diamonds)
+      hand.hand_rank
+
+      hand.render.should == "A of diamonds,  A of spades,  J of spades,  J of diamonds,  7 of diamonds, two_pair"
+
+    end
+
   end
   
 
 end
 
+describe Player do
+
+  subject(:player) do
+    Player.new("nat", 100)
+  end
+
+  let(:deck) {Deck.new}
+
+  its(:name) {should == "nat"}
+
+  its(:pot) {should == 100}
+
+  it "gets user's input"
 
 
-
+end
 

@@ -72,7 +72,7 @@ class Hand
 
 	def straight?
 		is_straight = true
-		switched_ace_pos = false
+		switched_ace_pos = 0
 		self.sort_by_value!
 		4.times do |i|
 			is_straight = false if (self.hand_cards[i].val - self.hand_cards[i + 1].val) != 1
@@ -83,7 +83,7 @@ class Hand
 			self.hand_cards.each_with_index do |card, i|
 				if card.val == 14
 					card.val = 1
-					switched_ace_pos = true
+					switched_ace_pos += 1
 				end
 			end
 			self.sort_by_value!
@@ -93,10 +93,17 @@ class Hand
 			end
 			
 		end
-		if is_straight && switched_ace_pos
+		if is_straight && switched_ace_pos > 0
 			self.hand_cards[4].val = 14 #give the ace the value of 14 again
 			sort_by_value!
-		end
+		elsif switched_ace_pos > 0 && is_straight == false
+      sort_by_value!
+      switched_ace_pos.times do |i|
+        self.hand_cards[((i + 1) * -1)].val = 14
+      end
+
+    end
+      
 		is_straight
 	end
 
@@ -265,6 +272,7 @@ class Hand
 				return
 			else
 				@hand_type = :high_card
+        sort_by_value!
 				return "high_card"
 			end
 					
@@ -278,6 +286,7 @@ class Hand
 	end
 
   def hand_rank
+    self.find_card_combo
 
     case @hand_type
 
@@ -305,17 +314,19 @@ class Hand
 
   end
 
-  def compare(other_hand)
+
+  def beats?(other_hand)
     case self.hand_rank <=> other_hand.hand_rank
     when 1
       #self wins
-      self
+      return true
     when 0
       #it's a tie
-
+      puts "it's a tie"
+      tie_breaker(other_hand)
     when -1
       #other_hand wins
-      other_hand
+      return false
     end
 
   end
@@ -330,19 +341,163 @@ class Hand
 
   end
 
-end
-
-def Player
-
-  attr_accessor :hand, :pot
-
-  def initialize
-
+  def tie_breaker(other_hand)
+    self.hand_cards.each_with_index do |card, i|
+      if card.val > other_hand.hand_cards[i].val
+        return true
+      end
+    end
+    false
   end
 
 end
 
+class Player
 
+  attr_accessor :hand, :pot, :name, :folded
+
+  def initialize(name, pot)
+    @name = name
+    @pot = pot
+    @folded = false
+  end
+
+  def discard(deck)
+    puts "player #{@name}: which cards do you want to discard? (e.g. 0,2,3)"
+    input = gets.chomp
+    unless input == ""
+      indices = input.split(",").map(&:to_i)
+      self.hand.discard(indices, deck)
+
+    end
+
+  end
+
+
+  def place_bet(game)
+    puts "player #{@name}: do you want to fold, see, or raise? (to fold, say fold. otherwise, just enter your bet amount)"
+    choice = gets.chomp
+    if choice == "fold"
+      self.folded = true
+    else
+      bet_amt = choice.to_i
+      @pot -= bet_amt
+      game.process_bet(bet_amt)
+    end
+
+
+  end
+
+  def beats?(other_player)
+    self.hand.beats?(other_player.hand)
+  end
+
+
+
+end
+
+class Game
+
+  attr_accessor :pot, :deck, :players
+
+  def initialize(players)
+    @players = players
+    @deck = Deck.new
+    @pot = 0
+  end
+
+  def deal_cards
+    @players.each do |player|
+      player.hand = Hand.new
+      player.hand.new_hand(@deck)
+      p "player: #{player.name}, this is your hand: #{player.hand}"
+      p player.hand.render
+    end
+    
+  end
+
+  
+
+  def play
+    deal_cards
+    p "cards dealt"
+    
+    place_bets
+    p "pot total: #{@pot}"
+
+    switch_cards
+
+    place_bets
+    p "pot total: #{@pot}"
+
+    reveal_cards
+
+    p "winning player is #{winner.name}"
+
+
+  end
+
+  def place_bets
+    @players.each do |player|
+      next if player.folded == true
+
+      player.place_bet(self)
+
+    end
+  end
+
+  def reveal_cards
+    @players.each do |player|
+      p "player #{player.name}'s hand:"
+      p "FOLDED" if player.folded == true
+      player.hand.find_card_combo
+      p player.hand.render
+
+    end
+  end
+
+  def switch_cards
+    @players.each do |player|
+      next if player.folded == true
+
+      player.discard(@deck)
+      p "player #{player.name}'s hand:"
+      p player.hand.render
+      
+    end
+  end
+
+  def process_bet(amt)
+    @pot += amt
+  end
+
+  def winner
+    winning_player = @players[0]
+    
+    1.upto(@players.count - 1) do |i|
+      next if @players[i].folded == true
+
+      if @players[i].beats?(winning_player)
+        winning_player = @players[i]
+      end
+    
+    end
+
+
+      #compare @players[0] to @players[1]
+      #get the winner out of that pair
+      #compare that player to @players[2]
+      #get the winner out of that pair
+      #compare that player to @players[3]
+      #get the winner of that pair
+      #compare that player to @players[4]
+      #get the winner of that pair and this person is the ultimate winner
+    
+    "player #{winning_player.name} is the winner!"
+    winning_player
+  end
+
+end
 
 
 
